@@ -48,6 +48,10 @@ echo "using port $PORT"
 
 cd "$(dirname "$0")"
 
+if [ ! -f "pdf.js/package.json" ]; then
+    git submodule update --init --recursive
+fi
+
 cp -r books pdf.js/books
 
 cd pdf.js
