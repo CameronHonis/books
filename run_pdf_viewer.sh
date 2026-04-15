@@ -32,6 +32,29 @@ while true; do
     esac
 done
 
+port_check() {
+    local p=$1
+    if command -v ss &>/dev/null; then
+        ss -tln | grep -q ":$p "
+    elif command -v netstat &>/dev/null; then
+        netstat -tln | grep -q ":$p "
+    else
+        python3 -c "import socket; s=socket.socket(); s.bind(('',$p))" 2>/dev/null
+    fi
+}
+
+ORIGINAL_PORT=$PORT
+ATTEMPTS=0
+while port_check $PORT; do
+    if [ $ATTEMPTS -ge 10 ]; then
+        echo "Error: port $ORIGINAL_PORT to $((ORIGINAL_PORT + ATTEMPTS)) are all in use" >&2
+        exit 1
+    fi
+    echo "port $PORT in use, trying $((PORT + 1))"
+    PORT=$((PORT + 1))
+    ATTEMPTS=$((ATTEMPTS + 1))
+done
+
 set -m
 
 # do tmux redirect here, passing all original args to the tmux process
@@ -58,8 +81,8 @@ cd pdf.js
 
 npm install >/dev/null
 
-npx gulp server &
+npx gulp server --port $PORT &
 
-xdg-open "http://localhost:${PORT}/books" >/dev/null
+open "http://localhost:${PORT}/books" >/dev/null
 
 fg
